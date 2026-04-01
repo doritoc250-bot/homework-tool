@@ -1,25 +1,17 @@
-FROM node:lts-alpine
-
-LABEL maintainer="TitaniumNetwork Ultraviolet Team"
-LABEL summary="Ultraviolet Proxy Image"
-LABEL description="Example application of Ultraviolet which can be deployed in production."
-
+FROM node:20-alpine
 ENV NODE_ENV=production
+EXPOSE 8080/tcp
 WORKDIR /app
-
-RUN apk add --upgrade --no-cache python3 make g++
-
-RUN npm install --global corepack@latest
-
-COPY package.json /app/package.json
-COPY pnpm-lock.yaml /app/pnpm-lock.yaml
-
-RUN corepack install
-RUN pnpm install
-
-COPY . /app
-
-EXPOSE 8080
-
-ENTRYPOINT [ "node" ]
+COPY package.json ./
+RUN apk add --upgrade --no-cache python3 make g++ curl
+RUN npm install -g pnpm
+RUN pnpm install --prod
+# Download UV files directly
+RUN mkdir -p uv && \
+    curl -L https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@latest/dist/uv.bundle.js -o uv/uv.bundle.js && \
+    curl -L https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@latest/dist/uv.config.js -o uv/uv.config.js && \
+    curl -L https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@latest/dist/uv.sw.js -o uv/uv.sw.js && \
+    curl -L https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@latest/dist/uv.handler.js -o uv/uv.handler.js
+COPY . .
+ENTRYPOINT ["node"]
 CMD ["src/index.js"]
